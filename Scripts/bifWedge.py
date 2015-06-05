@@ -1,3 +1,4 @@
+
 # !/usr/bin/env mayapy
 
 """
@@ -16,7 +17,7 @@ dryRun            -- If active will only generate Maya scene files withouth runn
 montage           -- If active will tile images after rendering and add watermarks to the final compositing
 
 Example : 
-./biFrostWedge.py --mayaFile ~/GDrive/VFX/CMI/CrashingWaveShading/scenes --projDir ~/GDrive/VFX/CMI/CrashingWaveShading --containerName bifrostLiquidContainer1 --node bifrostLiquidContainer1.vorticityMult --wedge 0 1 2 3 5 8 --frames 1 600 --montage
+mayapy ./bifWedge.py --mayaFile testProj/scenes/testScene.mb --projDir testProj --containerName bifrostLiquid1 --node bifrostLiquidContainer1.surfaceTension --wedge 0.0 0.073 0.2 --frames 1 10
 
 Ignore this:
 ffmpeg -y -f image2 -r 24 -i Montage.%04d.jpg -vcodec h264 -s 1280x720 stictionStrength.mov
@@ -29,8 +30,9 @@ import sys
 import os
 import argparse
 import subprocess
-import maya.cmds as cmds
 import maya.standalone
+import maya.cmds as cmds
+
 
 class biFrostWedge():
 
@@ -49,33 +51,33 @@ class biFrostWedge():
         # PARSE ARGUMENTS FROM COMMAND LINE
         args = parser.parse_args()
 
-        # JUMP TO MAIN 
+        # JUMP TO MAIN
         self.main(mayaFile=args.mayaFile, projDir=args.projDir, containerName=args.containerName, wedgeNode=args.node, wedgeList=args.wedge, dryRun=args.dryRun, montage=args.montage, frames=args.frames)
 
     def main(self, mayaFile, projDir, containerName, wedgeNode, wedgeList, dryRun, montage, frames):
 
+        # fetch the scene filename
         sceneName = os.path.split(mayaFile)[-1].split('.')[0]
+        # setup the cache directory
         cacheDir = os.path.join(projDir, 'cache', 'bifrost', sceneName, wedgeNode.replace('.', '_'))
         if not os.path.exists(cacheDir):
             os.makedirs(cacheDir)
-        print(
-            "Maya file to wedge:" + '\t' * 3 + mayaFile + '\n' + 
-            "Maya project directory:" + '\t' * 3 + projDir + '\n' + 
-            "Node and attribute to wedge:" + '\t' * 2 + wedgeNode + '\n' + 
-            "Wedge list:" + '\t' * 4 + str(wedgeList) + '\n'
-            )
-
+        
+        # print out summary before executions    
+        print( "Maya file to wedge:\t\t{:30}\nMaya project directory:\t\t{:30}\nNode and attribute to wedge:\t{:30}\nWedge list:\t\t\t{:30}".format(mayaFile,projDir,wedgeNode,wedgeList))
         # LOOP THROUGHT THE WEDGE LIST
         for i in range(len(wedgeList)):
             print('\nWedge numer:\t%02d' % i)
-            # GENERATE A NEW MAYA WEDGE FILE
-            wedgeName = wedgeNode.replace('.', '_') + '_%02d' % (i)
+            # GENERATE A NEW MAYA WEDGE FILES
+            wedgeName = "{name}_{val:02d}".format(name=wedgeNode.replace('.', '_'), val=i)
             try: 
                 wedgePath = self.wedgeSetup(mayaFile, cacheDir, containerName, wedgeName, wedgeNode, wedgeList[i])
+                print(wedgePath)
             except: 
                 print(sys.exc_info())
                 sys.exit("Couldn't setup wedgescene file")
 
+            """
             if not dryRun:
                 # RUN A RENDER SESSION WITH THE WEDGE FILE
                 subprocess_cmd = 'Render -renderer hw2 -fnc 3 -s {0} -e {1} -pad 4 -x 1280 -y 720 -of jpg -proj {2} -rd {3} -im {4} {5}'.format(frames[0], frames[1], projDir, cacheDir, wedgeName, wedgePath)
@@ -89,10 +91,12 @@ class biFrostWedge():
         # MONTAGE
         if montage:
             self.montage(cacheDir, wedgeNode, wedgeList, frames)
+        """
         return
 
 
     def wedgeSetup(self, mayaFile, cacheDir, containerName, wedgeName, wedgeNode, wedgeAttr):        
+        wedgePath = "bla"
         try:
             attr = float(wedgeAttr)
         except ValueError:
@@ -102,12 +106,14 @@ class biFrostWedge():
             # Initialize a new instance of maya
             maya.standalone.initialize()
             # Open up the source maya scene file
-            self.loadMaya()
-            cmds.file(mayaFile, open=True)
+            #self.loadMaya()
+            #cmds.file(mayaFile, open=True)
+            print("maya init")
         except: 
             print(sys.exc_info())
             sys.exit("Something went wrong while trying to open the maya scene file: {0}. Check the path and try again".format(mayaFile))
         
+        """
         # Select node for wedge and change attrs
         try: 
             print(wedgeNode)
@@ -140,9 +146,11 @@ class biFrostWedge():
         except:
             print(sys.exc_info())
             sys.exit("Can't save to the following location: {0}. Please check and try agian".format(wedgePath))
+        """
         # QUIT MAYA
         cmds.quit(force=True)
         print("Success")
+        
         return wedgePath
 
 
